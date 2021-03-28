@@ -7,11 +7,14 @@ const keys = require('../config/keys');
 const User = mongoose.model('users');
 
 passport.serializeUser((user, done) => {
+  console.log("serial")
   done(null, user.id);
 });
 
 passport.deserializeUser((id, done) => {
+  console.log("deserial")
   User.findById(id).then(user => {
+    console.log(user)
     done(null, user);
   });
 });
@@ -43,7 +46,7 @@ const authenticateUser =async (username,password,done)=>{
       res.send(err)
     }
   })
-  console.log(typeof newUser)
+  console.log(newUser)
   if(newUser){
     if(newUser.password == password){
     console.log(newUser)
@@ -60,5 +63,6 @@ const authenticateUser =async (username,password,done)=>{
 passport.use(
   new LocalStrategy({
     usernameField: 'email',
+    passwordField:'password'
   },authenticateUser)
 );

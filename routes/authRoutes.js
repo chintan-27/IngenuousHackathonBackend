@@ -3,6 +3,7 @@ const { registervalidation } = require('../validation');
 const mongoose = require('mongoose');
 const keys = require('../config/keys');
 const User = mongoose.model('users');
+const Aadhar = mongoose.model('aadhars');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const flash = require('connect-flash');
@@ -14,9 +15,10 @@ const corsOptions ={
 
 module.exports = app => {
   app.use(bodyParser.json());
+  app.use(bodyParser.urlencoded({ extended: false }));
   app.use(flash());
   app.use(cors(corsOptions));
-
+  let user;
   // app.use(cors);
   app.get('/',(req,res)=>{
 
@@ -31,7 +33,7 @@ module.exports = app => {
     }
   );
 
-  app.post('/register',async (req, res) => {
+  app.post('/api/register',async (req, res) => {
     const { error } = registervalidation(req.body);
     if(error) return res.status(400).send(error.details[0].message);
 
@@ -51,25 +53,48 @@ module.exports = app => {
     }
   });
 
-  app.post('/login',passport.authenticate('local', { successRedirect: '/', failureRedirect: '/login',failureFlash: true }),(req,res) => {
-    res.redirect('http://localhost:3000/');
+  app.post('/api/login',(req,res,next) => {
+    passport.authenticate('local', function(err, user, info) {
+      if (err) { return next(err); }
+      if (!user) { return; }
+      req.logIn(user, function(err) {
+        if (err) { return next(err); }
+          res.redirect("http://localhost:3000/");
+      });
+    })(req, res, next);
   });
-  app.post('/profilecomplete', async (req,res) =>{
-    let point = req.user.points;
-    if(req.body.national=="yes"){
+
+  
+  app.get('/api/logout', (req, res) => {
+    req.logout();
+    res.redirect("http://localhost:3000/home")
+  });
+
+  app.get('/api/current_user', (req, res) => {
+    res.send(req.user);
+  });
+
+  app.post('/api/profilecomplete', async (req, res,next) =>{
+
+    let point = 0;
+    if(req.body.national==true){
       point = point + 300;
-    }else if(req.body.state=="yes"){
+    }else if(req.body.state==true){
       point = point + 200;
-    }else if(req.body.district=="yes"){
+    }else if(req.body.district==true){
       point = point + 100;
     }
-  
-   await User.updateOne({_id : req.user._id},{
+    console.log(req)
+    console.log(req.body)
+    console.log(req.user)
+
+   await User.findOneAndUpdate({_id:req.user._id},{
      name : req.body.name,
      skillset : req.body.skillset,
      national : req.body.national,
      district : req.body.district,
      state : req.body.state,
+     verified: req.body.verified,
      points : point,
     },(err) => {
       if(err){
@@ -78,15 +103,6 @@ module.exports = app => {
         res.send("done")
       }
     })
-  });
-
-  app.get('/api/logout', (req, res) => {
-    req.logout();
-    res.redirect('/');
-  });
-
-  app.get('/api/current_user', (req, res) => {
-    res.send(req.user);
   });
 
   app.get('/api/usertype/:type', (req, res) => {
@@ -101,4 +117,21 @@ module.exports = app => {
       }
     });
   });
+
+  app.post('/api/aadharverify/:aadharno', async (req,res) => {
+    console.log(req.params)
+    const aadhar = await Aadhar.findOne({aadharno: req.params['aadharno']}, (err) => {
+      if(err){
+        console.log(err)
+      }
+    })
+    console.log(aadhar)
+    const text = req.body.text
+    console.log(text.includes(aadhar["name"]))
+    console.log(text.includes(aadhar["gender"]))
+    console.log(text.includes(aadhar["dob"]))
+     if(text.includes(aadhar["name"])  &&text.includes(aadhar["dob"])){
+       res.send({verified: true,name: aadhar['name']})
+     }
+  })
 };

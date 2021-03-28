@@ -24,16 +24,16 @@ const userSchema = new Schema({
     type : Array,
   },
   national:{
-    type: String,
-    default: "No",
+    type: Boolean,
+    default: false,
   },
   district:{
-    type: String,
-    default: "No",
+    type: Boolean,
+    default: false,
   },
   state:{
-    type: String,
-    default: "No",
+    type: Boolean,
+    default: false,
   },
   usertype:{
     type: String,

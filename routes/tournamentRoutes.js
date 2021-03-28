@@ -74,5 +74,21 @@ module.exports = app => {
       res.send("Insufficient players")
     }
   });
+
+  app.get("/api/alltournaments", async (req, res) => {
+    const tournaments = await Tournament.find()
+    res.send(tournaments)
+  })
+
   
+  app.post("/api/tournaments/", async (req, res) => {
+    const tournaments = []
+    for (let i in req.body.data){
+      let temp = await Tournament.find({sportname: req.body.data[i]})
+      for(let j in temp){
+        tournaments.push(temp[j])
+      }
+    }
+    res.send(tournaments)
+  })
 };
